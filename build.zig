@@ -29,19 +29,19 @@ pub fn build(b: *std.Build) void {
     // running `zig build`).
     b.installArtifact(lib);
 
-    var exe = b.addExecutable(.{
+    const exe = b.addExecutable(.{
         .name = "weather",
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
 
-    const spoon_mod = b.addModule("spoon", .{
-        .root_source_file = b.path("deps/zig-spoon/import.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    exe.root_module.addImport("spoon", spoon_mod);
+    // const spoon_mod = b.addModule("spoon", .{
+    //     .root_source_file = b.path("deps/zig-spoon/import.zig"),
+    //     .target = target,
+    //     .optimize = optimize,
+    // });
+    // exe.root_module.addImport("spoon", spoon_mod);
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
