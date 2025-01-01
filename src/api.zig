@@ -67,7 +67,7 @@ pub const GetWeather = struct {
         return switch (id) {
             200...299 => .Thunderstorm,
             300...399 => .Drizzle,
-            400...499 => .Rain,
+            500...599 => .Rain,
             600...699 => .Snow,
             700...799 => .Atmosphere,
             800 => .Clear,
