@@ -48,7 +48,7 @@ $custom\
 \n$character"""
 
 [custom.weather]
-command = "curl -s 127.0.0.1:1234 | jq -r '\"\\(.summary) \\(.wind_ms)🍃\"'"
+command = "curl -s 127.0.0.1:1234 | jq -r '\"\\(.summary) \\(.wind_ms)🍃 \\(.rain_at)\"'"
 format = "$output"
 when = "true"
 style = "bold green"

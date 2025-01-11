@@ -18,6 +18,7 @@ pub const FormatResponse = struct {
             switch (@TypeOf(@field(weather, f.name))) {
                 f64 => index += (try std.fmt.bufPrint(slice, " \"{s}\": {d:.1},", .{ f.name, @field(weather, f.name) })).len,
                 [4]u8 => index += (try std.fmt.bufPrint(slice, " \"{s}\": \"{s}\",", .{ f.name, @field(weather, f.name) })).len,
+                [5]u8 => index += (try std.fmt.bufPrint(slice, "\"{s}\": \"{s}\",", .{ f.name, @field(weather, f.name) })).len,
                 else => @panic("Add formatting to parse this type to json"),
             }
         }

@@ -76,6 +76,39 @@ pub const GetWeather = struct {
         };
     }
 
+    fn CheckForRain(list: []ListItem) ![5]u8 {
+        const output_length = 5;
+        var output: [output_length]u8 = undefined;
+        const rain_now: bool = switch (try getWeatherSummary(list[0].weather.?[0].id)) {
+            .Drizzle => true,
+            .Thunderstorm => true,
+            .Rain => true,
+            .Snow => true,
+            else => false,
+        };
+        if (rain_now) {
+            const result: []u8 = try std.fmt.bufPrint(output[0..], "NOW!!", .{});
+            std.debug.assert(result.len == output_length);
+            return output;
+        }
+
+        const rain_soon: bool = switch (try getWeatherSummary(list[1].weather.?[0].id)) {
+            .Drizzle => true,
+            .Thunderstorm => true,
+            .Rain => true,
+            .Snow => true,
+            else => false,
+        };
+        if (rain_soon) {
+            const result = try std.fmt.bufPrint(output[0..], "SOON!", .{});
+            std.debug.assert(result.len == output_length);
+            return output;
+        }
+        const result = try std.fmt.bufPrint(output[0..], "     ", .{});
+        std.debug.assert(result.len == output_length);
+        return output;
+    }
+
     pub fn GetNow() !CurrentWeather {
         var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
         defer arena.deinit();
@@ -86,7 +119,6 @@ pub const GetWeather = struct {
 
         _ = try std.json.validate(allocator, data);
         const json = try std.json.parseFromSlice(ApiResponse, allocator, data, .{});
-
         const weather_summary = json.value.list[0].weather.?[0];
         const rain_mm = if (json.value.list[0].rain) |rain|
             rain.th
@@ -97,7 +129,7 @@ pub const GetWeather = struct {
         const wind = json.value.list[0].wind;
         const wind_ms: f64 = if (wind) |field| field.speed else 0.0;
         const summary_enum = try getWeatherSummary(weather_summary.id);
-        return CurrentWeather{ .summary = try SummaryToChar(summary_enum), .rain_mm = rain_mm, .temperature = temperature, .wind_ms = wind_ms };
+        return CurrentWeather{ .summary = try SummaryToChar(summary_enum), .rain_mm = rain_mm, .temperature = temperature, .wind_ms = wind_ms, .rain_at = try CheckForRain(json.value.list) };
     }
 };
 
@@ -125,5 +157,5 @@ fn SummaryToChar(summary: WeatherSummary) ![4]u8 {
     return character;
 }
 
-pub const CurrentWeather = struct { summary: [4]u8, rain_mm: f64, temperature: f64, wind_ms: f64 };
+pub const CurrentWeather = struct { summary: [4]u8, rain_mm: f64, temperature: f64, wind_ms: f64, rain_at: [5]u8 };
 pub const WeatherTimeslot = struct { summary: WeatherSummary, rain_mm: f32, time: u64 };
