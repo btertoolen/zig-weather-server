@@ -8,25 +8,26 @@ pub const FormatResponse = struct {
         allocator: std.mem.Allocator,
         weather: CurrentWeather,
     ) ![]u8 {
-        const summary = try SummaryToChar(weather.summary);
-        const summary_str = summary[0..];
-        const buf = try std.fmt.allocPrint(allocator, "{{ \"summary\": \"{s}\", \"rain_mm\": {d:.1}, \"temperature\": {d:.1} }}", .{ summary_str, weather.rain_mm, weather.temperature });
-        std.debug.print("buf: {s}\n", .{summary_str});
+        var buf: [250]u8 = undefined;
+        var index: usize = 0;
 
-        return buf;
-    }
+        index += (try std.fmt.bufPrint(&buf, "{{ ", .{})).len;
 
-    fn SummaryToChar(summary: WeatherSummary) ![4]u8 {
-        var character: [4]u8 = undefined;
-        _ = switch (summary) {
-            .Thunderstorm => try std.unicode.utf8Encode(0x26A1, character[0..]),
-            .Drizzle => try std.unicode.utf8Encode(0x1F4A7, character[0..]),
-            .Clouds => try std.unicode.utf8Encode(0x2601, character[0..]),
-            .Rain => try std.unicode.utf8Encode(0x1F327, character[0..]),
-            .Snow => try std.unicode.utf8Encode(0x2601, character[0..]),
-            .Atmosphere => try std.unicode.utf8Encode(0x1F32B, character[0..]),
-            .Clear => try std.unicode.utf8Encode(0x2600, character[0..]),
-        };
-        return character;
+        inline for (std.meta.fields(@TypeOf(weather))) |f| {
+            const slice = buf[index..];
+            switch (@TypeOf(@field(weather, f.name))) {
+                f64 => index += (try std.fmt.bufPrint(slice, " \"{s}\": {d:.1},", .{ f.name, @field(weather, f.name) })).len,
+                [4]u8 => index += (try std.fmt.bufPrint(slice, " \"{s}\": \"{s}\",", .{ f.name, @field(weather, f.name) })).len,
+                else => @panic("Add formatting to parse this type to json"),
+            }
+        }
+        buf[index - 1] = ' ';
+        // buf[index] = "}";
+        return std.fmt.allocPrint(allocator, "{s} }}\n", .{buf[0 .. index - 1]});
     }
 };
+
+// var string = std.ArrayList(u8).init(allocator);
+// try std.json.stringify(weather, .{}, string.writer());
+
+// return string.toOwnedSlice();

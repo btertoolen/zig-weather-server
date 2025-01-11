@@ -94,7 +94,10 @@ pub const GetWeather = struct {
             0.0;
 
         const temperature = json.value.list[0].main.temp;
-        return CurrentWeather{ .summary = try getWeatherSummary(weather_summary.id), .rain_mm = rain_mm, .temperature = temperature };
+        const wind = json.value.list[0].wind;
+        const wind_ms: f64 = if (wind) |field| field.speed else 0.0;
+        const summary_enum = try getWeatherSummary(weather_summary.id);
+        return CurrentWeather{ .summary = try SummaryToChar(summary_enum), .rain_mm = rain_mm, .temperature = temperature, .wind_ms = wind_ms };
     }
 };
 
@@ -108,5 +111,19 @@ pub const WeatherSummary = enum(u8) {
     Clouds = 9,
 };
 
-pub const CurrentWeather = struct { summary: WeatherSummary, rain_mm: f64, temperature: f64 };
+fn SummaryToChar(summary: WeatherSummary) ![4]u8 {
+    var character: [4]u8 = undefined;
+    _ = switch (summary) {
+        .Thunderstorm => try std.unicode.utf8Encode(0x26A1, character[0..]),
+        .Drizzle => try std.unicode.utf8Encode(0x1F4A7, character[0..]),
+        .Clouds => try std.unicode.utf8Encode(0x2601, character[0..]),
+        .Rain => try std.unicode.utf8Encode(0x1F327, character[0..]),
+        .Snow => try std.unicode.utf8Encode(0x2601, character[0..]),
+        .Atmosphere => try std.unicode.utf8Encode(0x1F32B, character[0..]),
+        .Clear => try std.unicode.utf8Encode(0x2600, character[0..]),
+    };
+    return character;
+}
+
+pub const CurrentWeather = struct { summary: [4]u8, rain_mm: f64, temperature: f64, wind_ms: f64 };
 pub const WeatherTimeslot = struct { summary: WeatherSummary, rain_mm: f32, time: u64 };
