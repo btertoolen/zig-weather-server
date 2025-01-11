@@ -10,8 +10,10 @@ pub fn main() !void {
     defer arena.deinit();
     const allocator = arena.allocator();
 
-    const weather = try GetWeather.GetNow();
+    var weather = try GetWeather.GetNow();
     std.debug.print("Weather: {s}\n", .{weather.summary});
+    var last_fetch = std.time.timestamp();
+    const timeout = 60;
 
     const http_read_buffer = try allocator.alloc(u8, 1e4);
     var server_address = try net.Address.resolveIp("127.0.0.1", 1234);
@@ -25,8 +27,11 @@ pub fn main() !void {
         const reader = try request.reader();
         const buffer = try reader.readAllAlloc(allocator, 200);
         defer allocator.free(buffer); // ignore the contents?
+        if (std.time.timestamp() - last_fetch > timeout) {
+            weather = try GetWeather.GetNow();
+            last_fetch = std.time.timestamp();
+        }
         const response = try FormatResponse.CurrentWeatherJson(allocator, weather);
-        std.debug.print("response length: {d}", .{response.len});
         _ = request.respond(response, .{}) catch unreachable;
     }
 }
